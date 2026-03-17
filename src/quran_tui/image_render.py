@@ -10,12 +10,13 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
+from .azkar import Zikr
 from .model import SurahDetails
 from .theme import get_render_theme
 
 DEFAULT_FONT_PATH = "/usr/share/fonts/google-noto-vf/NotoNaskhArabic[wght].ttf"
 DEFAULT_UI_FONT_PATH = "/usr/share/fonts/google-noto-vf/NotoSans[wght].ttf"
-RENDER_VERSION = "21"
+RENDER_VERSION = "25"
 BASMALA_PREFIXES = (
     "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
     "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
@@ -149,7 +150,7 @@ class KittyAyahRenderer:
             ),
             radius=18,
             fill=(0, 0, 0, 0),
-            outline=(240, 236, 228, 110),
+            outline=(245, 245, 245, 120),
             width=2,
         )
         page_margin_x = 52
@@ -162,7 +163,7 @@ class KittyAyahRenderer:
             (header_center_x, outer_margin_y + 8),
             title_ornament,
             font=self.ornament_font,
-            fill="#e8dfcf",
+            fill="#f5f5f5",
             anchor="ma",
             direction="rtl",
             language="ar",
@@ -180,7 +181,7 @@ class KittyAyahRenderer:
             (header_center_x, outer_margin_y + 84),
             title_ornament,
             font=self.ornament_font,
-            fill="#e8dfcf",
+            fill="#f5f5f5",
             anchor="ma",
             direction="rtl",
             language="ar",
@@ -214,7 +215,7 @@ class KittyAyahRenderer:
                 (width_px // 2, ornament_y),
                 ornament.strip(),
                 font=self.ornament_font,
-                fill="#e8dfcf",
+                fill="#f5f5f5",
                 anchor="ma",
                 direction="rtl",
                 language="ar",
@@ -232,7 +233,7 @@ class KittyAyahRenderer:
                 (width_px // 2, basmala_y + 34),
                 ornament.strip(),
                 font=self.ornament_font,
-                fill="#e8dfcf",
+                fill="#f5f5f5",
                 anchor="ma",
                 direction="rtl",
                 language="ar",
@@ -360,3 +361,178 @@ def _hex_to_rgba(value: str, alpha: int) -> tuple[int, int, int, int]:
         int(value[4:6], 16),
         alpha,
     )
+
+
+class KittyAzkarRenderer:
+    def __init__(
+        self,
+        font_path: str = DEFAULT_FONT_PATH,
+        ui_font_path: str = DEFAULT_UI_FONT_PATH,
+    ) -> None:
+        self.font_path = font_path
+        self.ui_font_path = ui_font_path
+        self.theme = get_render_theme()
+        self._theme_signature = tuple(self.theme.__dict__.values())
+        self._last_theme_check = 0.0
+        self.cache_dir = Path(tempfile.gettempdir()) / "quran-tui-azkar-images"
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.last_image: Path | None = None
+        self.last_place: str | None = None
+        self.text_font = ImageFont.truetype(self.font_path, 30)
+        try:
+            self.title_font = ImageFont.truetype(self.ui_font_path, 28)
+            self.ui_font = ImageFont.truetype(self.ui_font_path, 22)
+            self.ui_font_small = ImageFont.truetype(self.ui_font_path, 18)
+        except OSError:
+            self.title_font = ImageFont.load_default()
+            self.ui_font = ImageFont.load_default()
+            self.ui_font_small = ImageFont.load_default()
+
+    def is_supported(self) -> bool:
+        return bool(os.environ.get("KITTY_WINDOW_ID"))
+
+    def clear(self) -> None:
+        self.last_image = None
+        self.last_place = None
+
+    def draw(
+        self,
+        title: str,
+        items: list[Zikr],
+        top_index: int,
+        selected_index: int,
+        width_cells: int,
+        height_cells: int,
+        x_cell: int,
+        y_cell: int,
+    ) -> None:
+        if not self.is_supported():
+            return
+        self._refresh_theme_if_needed()
+        image_path = self._render_image(title, items, top_index, selected_index, width_cells, height_cells)
+        place = f"{width_cells}x{height_cells}@{x_cell}x{y_cell}"
+        if self.last_image == image_path and self.last_place == place:
+            return
+        self.last_image = image_path
+        self.last_place = place
+        subprocess.run(
+            [
+                "kitty",
+                "+kitten",
+                "icat",
+                "--stdin=no",
+                "--unicode-placeholder",
+                "--transfer-mode=stream",
+                "--place",
+                place,
+                str(image_path),
+            ],
+            check=False,
+            stderr=subprocess.DEVNULL,
+        )
+
+    def _render_image(
+        self,
+        title: str,
+        items: list[Zikr],
+        top_index: int,
+        selected_index: int,
+        width_cells: int,
+        height_cells: int,
+    ) -> Path:
+        content = "\n".join(f"{item.repeat}|{item.text}|{item.note}" for item in items)
+        key = hashlib.sha256(
+            f"{RENDER_VERSION}:{self._theme_signature}:{title}:{top_index}:{selected_index}:{width_cells}:{height_cells}:{content}".encode("utf-8")
+        ).hexdigest()
+        image_path = self.cache_dir / f"{key}.png"
+        if image_path.exists():
+            return image_path
+
+        width_px = max(400, width_cells * 14)
+        height_px = max(240, height_cells * 28)
+        outer_margin_x = 20
+        outer_margin_y = 18
+        image = Image.new("RGBA", (width_px, height_px), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        inner_left = outer_margin_x
+        inner_top = outer_margin_y
+        inner_right = width_px - outer_margin_x
+        inner_bottom = height_px - outer_margin_y
+        draw.rounded_rectangle(
+            (inner_left, inner_top, inner_right, inner_bottom),
+            radius=18,
+            fill=(0, 0, 0, 0),
+            outline=(245, 245, 245, 120),
+            width=2,
+        )
+
+        draw.text((width_px // 2, outer_margin_y + 24), title, font=self.title_font, fill=self.theme.header, anchor="ma")
+        y = outer_margin_y + 70
+        right_x = inner_right - 36
+        left_x = inner_left + 24
+        available_width = max(320, inner_right - inner_left - 84)
+        max_y = inner_bottom - 24
+
+        for index in range(top_index, len(items)):
+            item = items[index]
+            selected = index == selected_index
+            header_color = "#ffffff" if selected else self.theme.subheader
+            text_color = "#ffffff" if selected else self.theme.text
+            wrapped = self._wrap_arabic_text(draw, item.text, self.text_font, available_width)
+            estimated_height = 30 + (len(wrapped) * 40) + (28 if item.note else 0) + 18
+            if y + estimated_height > max_y:
+                break
+
+            draw.text((left_x, y), f"{index + 1}. {item.repeat}", font=self.ui_font, fill=header_color, anchor="la")
+            y += 30
+            for line in wrapped:
+                if y + 40 > max_y:
+                    break
+                draw.text((right_x, y), line, font=self.text_font, fill=text_color, anchor="ra", direction="rtl", language="ar")
+                y += 40
+            if item.note:
+                if y + 28 > max_y:
+                    break
+                draw.text((left_x + 18, y), item.note, font=self.ui_font_small, fill=self.theme.subheader, anchor="la")
+                y += 28
+            y += 18
+
+        image.save(image_path)
+        return image_path
+
+    def _wrap_arabic_text(
+        self,
+        draw: ImageDraw.ImageDraw,
+        text: str,
+        font: ImageFont.FreeTypeFont,
+        width_px: int,
+    ) -> list[str]:
+        words = text.split()
+        if not words:
+            return [text]
+        lines: list[str] = []
+        current = words[0]
+        for word in words[1:]:
+            candidate = f"{current} {word}"
+            bbox = draw.textbbox((0, 0), candidate, font=font, direction="rtl", language="ar")
+            if bbox[2] - bbox[0] <= width_px:
+                current = candidate
+            else:
+                lines.append(current)
+                current = word
+        lines.append(current)
+        return lines
+
+    def _refresh_theme_if_needed(self) -> None:
+        now = time.monotonic()
+        if now - self._last_theme_check < 1.0:
+            return
+        self._last_theme_check = now
+        theme = get_render_theme()
+        signature = tuple(theme.__dict__.values())
+        if signature == self._theme_signature:
+            return
+        self.theme = theme
+        self._theme_signature = signature
+        self.last_image = None
+        self.last_place = None

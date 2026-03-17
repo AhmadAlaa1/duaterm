@@ -5,8 +5,9 @@ import textwrap
 import time
 from dataclasses import dataclass
 
+from .azkar import MORNING_AZKAR, NIGHT_AZKAR, Zikr
 from .api import QuranAPI, QuranAPIError
-from .image_render import KittyAyahRenderer
+from .image_render import KittyAyahRenderer, KittyAzkarRenderer
 from .model import SurahDetails, SurahSummary
 from .rendering import (
     ARABIC_DISPLAY_MODES,
@@ -28,6 +29,11 @@ class ReaderState:
     focus: str = "surahs"
     status: str = "Loading Quran data..."
     arabic_mode: str = DEFAULT_ARABIC_DISPLAY_MODE
+    screen: str = "menu"
+    menu_index: int = 0
+    azkar_index: int = 0
+    azkar_top_line: int = 0
+    azkar_kind: str = "morning"
 
 
 class QuranReaderApp:
@@ -36,8 +42,17 @@ class QuranReaderApp:
         self.api = api
         self.state = ReaderState(surahs=[])
         self.kitty_renderer = KittyAyahRenderer()
+        self.kitty_azkar_renderer = KittyAzkarRenderer()
         self.needs_redraw = True
         self.preview_due_at: float | None = None
+        self.menu_items = ["Quran", "Morning Azkar", "Night Azkar"]
+        self.logo = [
+            "  ___                       _____ _____ _____ ",
+            " / _ \\ _   _ _ __ __ _ _ __|_   _|_   _|_   _|",
+            "| | | | | | | '__/ _` | '_ \\ | |   | |   | |  ",
+            "| |_| | |_| | | | (_| | | | || |   | |   | |  ",
+            " \\__\\_\\\\__,_|_|  \\__,_|_| |_|\\_|   \\_|   \\_|  ",
+        ]
 
     def run(self) -> None:
         curses.curs_set(0)
@@ -76,7 +91,17 @@ class QuranReaderApp:
 
     def _handle_key(self, key: int) -> bool:
         if key in (ord("q"), 27):
-            return False
+            if self.state.screen == "menu":
+                return False
+            self.kitty_azkar_renderer.clear()
+            self._go_to_menu()
+            return True
+        if self.state.screen == "menu":
+            return self._handle_menu_keys(key)
+        if self.state.screen == "azkar":
+            handled = self._handle_azkar_keys(key)
+            self.needs_redraw = True
+            return handled
         if key in (9, ord("\t")):
             self.state.focus = "ayahs" if self.state.focus == "surahs" else "surahs"
             self.needs_redraw = True
@@ -105,6 +130,48 @@ class QuranReaderApp:
             handled = self._handle_ayah_keys(key)
         self.needs_redraw = True
         return handled
+
+    def _handle_menu_keys(self, key: int) -> bool:
+        if key in (curses.KEY_UP, ord("k")):
+            self.state.menu_index = max(0, self.state.menu_index - 1)
+        elif key in (curses.KEY_DOWN, ord("j")):
+            self.state.menu_index = min(len(self.menu_items) - 1, self.state.menu_index + 1)
+        elif key in (10, 13, curses.KEY_ENTER):
+            selected = self.menu_items[self.state.menu_index]
+            if selected == "Quran":
+                self.state.screen = "quran"
+                self.state.focus = "surahs"
+            else:
+                self.state.screen = "azkar"
+                self.state.azkar_kind = "morning" if selected == "Morning Azkar" else "night"
+                self.state.azkar_index = 0
+                self.state.azkar_top_line = 0
+                self.state.focus = "ayahs"
+                self.state.status = f"Opened {selected}."
+        self.needs_redraw = True
+        return True
+
+    def _handle_azkar_keys(self, key: int) -> bool:
+        items = self._current_azkar()
+        if key in (curses.KEY_UP, ord("k")):
+            self.state.azkar_index = max(0, self.state.azkar_index - 1)
+            self._ensure_zikr_visible()
+        elif key in (curses.KEY_DOWN, ord("j")):
+            self.state.azkar_index = min(len(items) - 1, self.state.azkar_index + 1)
+            self._ensure_zikr_visible()
+        elif key == curses.KEY_NPAGE:
+            self.state.azkar_index = min(len(items) - 1, self.state.azkar_index + 3)
+            self._ensure_zikr_visible()
+        elif key == curses.KEY_PPAGE:
+            self.state.azkar_index = max(0, self.state.azkar_index - 3)
+            self._ensure_zikr_visible()
+        elif key in (curses.KEY_HOME, ord("g")):
+            self.state.azkar_index = 0
+            self._ensure_zikr_visible()
+        elif key in (curses.KEY_END, ord("G")):
+            self.state.azkar_index = len(items) - 1
+            self._ensure_zikr_visible()
+        return True
 
     def _handle_surah_keys(self, key: int) -> bool:
         if not self.state.surahs:
@@ -291,6 +358,15 @@ class QuranReaderApp:
             self.stdscr.refresh()
             return
 
+        if self.state.screen == "menu":
+            self._draw_menu(height, width)
+            self.stdscr.refresh()
+            return
+        if self.state.screen == "azkar":
+            self._draw_azkar_screen(height, width)
+            self.stdscr.refresh()
+            return
+
         surah_width = max(MIN_SURAH_PANEL_WIDTH, min(42, width // 3))
         ayah_x = surah_width + PANEL_GAP
         ayah_width = width - ayah_x
@@ -299,6 +375,75 @@ class QuranReaderApp:
         self._draw_ayah_panel(0, ayah_x, height - 1, ayah_width)
         self._draw_status_bar(height - 1, width)
         self.stdscr.refresh()
+
+    def _draw_menu(self, height: int, width: int) -> None:
+        center_x = width // 2
+        top = max(2, height // 2 - 8)
+        for offset, line in enumerate(self.logo):
+            x = max(0, center_x - len(line) // 2)
+            attr = curses.color_pair(1) if curses.has_colors() else curses.A_BOLD
+            self._safe_addnstr(top + offset, x, line, len(line), attr)
+
+        title = "Terminal Quran & Azkar"
+        self._safe_addnstr(top + len(self.logo) + 1, max(0, center_x - len(title) // 2), title, len(title), curses.A_BOLD)
+
+        menu_top = top + len(self.logo) + 4
+        for index, item in enumerate(self.menu_items):
+            text = f"[ {item} ]"
+            x = max(0, center_x - len(text) // 2)
+            attr = curses.color_pair(2) if index == self.state.menu_index and curses.has_colors() else 0
+            if index == self.state.menu_index and not curses.has_colors():
+                attr = curses.A_REVERSE
+            self._safe_addnstr(menu_top + index * 2, x, text, len(text), attr)
+
+        help_text = "Enter select | q quit"
+        self._safe_addnstr(height - 2, max(0, center_x - len(help_text) // 2), help_text, len(help_text))
+
+    def _draw_azkar_screen(self, height: int, width: int) -> None:
+        title = "Morning Azkar" if self.state.azkar_kind == "morning" else "Night Azkar"
+        self._draw_box(0, 0, height - 1, width, title)
+        if self.kitty_azkar_renderer.is_supported():
+            self.kitty_azkar_renderer.draw(
+                title,
+                self._current_azkar(),
+                self.state.azkar_top_line,
+                self.state.azkar_index,
+                max(10, width - 2),
+                max(4, height - 2),
+                1,
+                1,
+            )
+            status = "Esc back | Up/Down move"
+            self._draw_status_bar(height - 1, width, override=f"{title}  {status}")
+            return
+        content_height = height - 3
+        items = self._current_azkar()
+        top = self.state.azkar_top_line
+        bottom = min(len(items), top + content_height)
+        row = 1
+        for index in range(top, bottom):
+            zikr = items[index]
+            attr = curses.color_pair(2) if index == self.state.azkar_index and curses.has_colors() else 0
+            if index == self.state.azkar_index and not curses.has_colors():
+                attr = curses.A_REVERSE
+            header = f"{index + 1}. {zikr.repeat}"
+            self._safe_addnstr(row, 2, header, width - 4, attr | curses.A_BOLD)
+            row += 1
+            wrapped = textwrap.wrap(self._render_arabic(zikr.text), max(20, width - 6)) or [zikr.text]
+            for line in wrapped:
+                if row >= height - 2:
+                    break
+                self._safe_addnstr(row, 4, line, width - 6, attr)
+                row += 1
+            if zikr.note and row < height - 2:
+                self._safe_addnstr(row, 4, zikr.note, width - 6, attr)
+                row += 1
+            if row < height - 2:
+                row += 1
+            if row >= height - 2:
+                break
+        status = "Esc back | Up/Down move"
+        self._draw_status_bar(height - 1, width, override=f"{title}  {status}")
 
     def _draw_surah_panel(self, y: int, x: int, height: int, width: int) -> None:
         self._draw_box(y, x, height, width, "Surahs")
@@ -354,10 +499,10 @@ class QuranReaderApp:
             text_x = x + width - 1 - text_width
             self._safe_addnstr(y + row, text_x, rendered_text, text_width)
 
-    def _draw_status_bar(self, y: int, width: int) -> None:
+    def _draw_status_bar(self, y: int, width: int, override: str | None = None) -> None:
         focus_text = "Surahs" if self.state.focus == "surahs" else "Ayahs"
         help_text = f"Tab switch | Enter open | s jump | m mode:{self.state.arabic_mode} | r refresh | q quit"
-        status = f"{self.state.status}  [{focus_text}]  {help_text}"
+        status = override or f"{self.state.status}  [{focus_text}]  {help_text}"
         attr = curses.color_pair(2) if curses.has_colors() else curses.A_REVERSE
         self._safe_addnstr(y, 0, status.ljust(max(1, width - 1)), max(1, width - 1), attr)
 
@@ -432,6 +577,28 @@ class QuranReaderApp:
 
     def _render_arabic(self, text: str) -> str:
         return prepare_terminal_text_with_mode(text, self.state.arabic_mode)
+
+    def _go_to_menu(self) -> None:
+        self.state.screen = "menu"
+        self.state.focus = "surahs"
+        self.preview_due_at = None
+        self.needs_redraw = True
+
+    def _current_azkar(self) -> list[Zikr]:
+        return MORNING_AZKAR if self.state.azkar_kind == "morning" else NIGHT_AZKAR
+
+    def _ensure_zikr_visible(self) -> None:
+        visible = self._azkar_visible_items()
+        index = self.state.azkar_index
+        if index < self.state.azkar_top_line:
+            self.state.azkar_top_line = index
+        elif index >= self.state.azkar_top_line + visible:
+            self.state.azkar_top_line = index - visible + 1
+
+    def _azkar_visible_items(self) -> int:
+        height = self.stdscr.getmaxyx()[0]
+        # Azkar entries are multi-line and much taller than a simple list row.
+        return max(1, (height - 4) // 6)
 
 
 def run_app(api: QuranAPI) -> None:
