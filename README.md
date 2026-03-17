@@ -4,6 +4,7 @@ Read the Holy Quran in the terminal with a split-pane TUI built on Python `curse
 
 ## Features
 
+- Centered main menu with `Quran`, `Morning Azkar`, and `Night Azkar`.
 - Browse all 114 surahs.
 - Load Quran text from bundled offline data in the `quran-uthmani` edition.
 - Scroll ayahs inside the terminal without external UI frameworks.
@@ -37,6 +38,7 @@ quran-tui
 
 ## Controls
 
+- Main menu: `Up` / `Down` then `Enter`
 - `Up` / `Down` or `j` / `k`: move in the focused panel
 - `PageUp` / `PageDown`: scroll faster
 - `Enter`: open the selected surah
@@ -44,7 +46,8 @@ quran-tui
 - `s`: jump to a surah number
 - `m`: cycle Arabic rendering mode: `bidi`, `plain`, `reshaped`
 - `r`: reload bundled data from disk
-- `q` or `Esc`: quit
+- `Esc`: go back to the main menu
+- `q`: quit from the main menu
 
 ## Arabic Rendering Modes
 
