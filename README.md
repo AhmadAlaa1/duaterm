@@ -21,7 +21,13 @@ Read the Holy Quran in the terminal with a split-pane TUI built on Python `curse
 python3 main.py
 ```
 
-The repository-local launcher also loads vendored Arabic rendering helpers from `vendor/` when present.
+When started outside `kitty`, the app now auto-relaunches itself in `kitty` when `kitty` is installed. That avoids broken Arabic rendering in terminals such as the VS Code integrated terminal.
+
+If you want to force raw in-terminal mode anyway:
+
+```bash
+QURAN_TUI_DISABLE_AUTO_KITTY=1 python3 main.py
+```
 
 If you are using the VS Code integrated terminal, use `kitty` instead:
 

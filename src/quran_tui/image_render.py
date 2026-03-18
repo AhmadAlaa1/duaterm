@@ -15,8 +15,19 @@ from .azkar import Zikr
 from .model import SurahDetails
 from .theme import get_render_theme
 
-DEFAULT_FONT_PATH = "/usr/share/fonts/google-noto-vf/NotoNaskhArabic[wght].ttf"
-DEFAULT_UI_FONT_PATH = "/usr/share/fonts/google-noto-vf/NotoSans[wght].ttf"
+ARABIC_FONT_CANDIDATES = [
+    "/usr/share/fonts/google-noto-vf/NotoNaskhArabic[wght].ttf",
+    "/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf",
+    "/usr/share/fonts/truetype/noto/NotoNaskhArabicUI-Regular.ttf",
+    "/usr/share/fonts/truetype/amiri/Amiri-Regular.ttf",
+    "/usr/share/fonts/opentype/urw-base35/NimbusSans-Regular.otf",
+]
+UI_FONT_CANDIDATES = [
+    "/usr/share/fonts/google-noto-vf/NotoSans[wght].ttf",
+    "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+]
 RENDER_VERSION = "31"
 BASMALA_PREFIXES = (
     "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
@@ -28,11 +39,11 @@ AYAH_MARKER_RE = re.compile(r"\[\[AYAH:(\d+)\]\]")
 class KittyAyahRenderer:
     def __init__(
         self,
-        font_path: str = DEFAULT_FONT_PATH,
-        ui_font_path: str = DEFAULT_UI_FONT_PATH,
+        font_path: str | None = None,
+        ui_font_path: str | None = None,
     ) -> None:
-        self.font_path = font_path
-        self.ui_font_path = ui_font_path
+        self.font_path = _pick_font_path(font_path, ARABIC_FONT_CANDIDATES)
+        self.ui_font_path = _pick_font_path(ui_font_path, UI_FONT_CANDIDATES)
         self.theme = get_render_theme()
         self._theme_signature = tuple(self.theme.__dict__.values())
         self._last_theme_check = 0.0
@@ -41,16 +52,12 @@ class KittyAyahRenderer:
         self.last_image: Path | None = None
         self.last_place: str | None = None
         self._line_cache: dict[tuple[int, int], list[str]] = {}
-        self.title_font = ImageFont.truetype(self.font_path, 34)
-        self.text_font = ImageFont.truetype(self.font_path, 29)
-        try:
-            self.num_font = ImageFont.truetype(self.ui_font_path, 22)
-            self.meta_font = ImageFont.truetype(self.ui_font_path, 20)
-        except OSError:
-            self.num_font = ImageFont.load_default()
-            self.meta_font = ImageFont.load_default()
-        self.basmala_font = ImageFont.truetype(self.font_path, 38)
-        self.ornament_font = ImageFont.truetype(self.font_path, 24)
+        self.title_font = _load_font(self.font_path, 34)
+        self.text_font = _load_font(self.font_path, 29)
+        self.num_font = _load_font(self.ui_font_path, 22)
+        self.meta_font = _load_font(self.ui_font_path, 20)
+        self.basmala_font = _load_font(self.font_path, 38)
+        self.ornament_font = _load_font(self.font_path, 24)
 
     def is_supported(self) -> bool:
         return bool(os.environ.get("KITTY_WINDOW_ID"))
@@ -472,11 +479,11 @@ def _hex_to_rgba(value: str, alpha: int) -> tuple[int, int, int, int]:
 class KittyAzkarRenderer:
     def __init__(
         self,
-        font_path: str = DEFAULT_FONT_PATH,
-        ui_font_path: str = DEFAULT_UI_FONT_PATH,
+        font_path: str | None = None,
+        ui_font_path: str | None = None,
     ) -> None:
-        self.font_path = font_path
-        self.ui_font_path = ui_font_path
+        self.font_path = _pick_font_path(font_path, ARABIC_FONT_CANDIDATES)
+        self.ui_font_path = _pick_font_path(ui_font_path, UI_FONT_CANDIDATES)
         self.theme = get_render_theme()
         self._theme_signature = tuple(self.theme.__dict__.values())
         self._last_theme_check = 0.0
@@ -484,15 +491,10 @@ class KittyAzkarRenderer:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.last_image: Path | None = None
         self.last_place: str | None = None
-        self.text_font = ImageFont.truetype(self.font_path, 30)
-        try:
-            self.title_font = ImageFont.truetype(self.ui_font_path, 28)
-            self.ui_font = ImageFont.truetype(self.ui_font_path, 22)
-            self.ui_font_small = ImageFont.truetype(self.ui_font_path, 18)
-        except OSError:
-            self.title_font = ImageFont.load_default()
-            self.ui_font = ImageFont.load_default()
-            self.ui_font_small = ImageFont.load_default()
+        self.text_font = _load_font(self.font_path, 30)
+        self.title_font = _load_font(self.ui_font_path, 28)
+        self.ui_font = _load_font(self.ui_font_path, 22)
+        self.ui_font_small = _load_font(self.ui_font_path, 18)
 
     def is_supported(self) -> bool:
         return bool(os.environ.get("KITTY_WINDOW_ID"))
@@ -642,3 +644,21 @@ class KittyAzkarRenderer:
         self._theme_signature = signature
         self.last_image = None
         self.last_place = None
+
+
+def _pick_font_path(preferred: str | None, candidates: list[str]) -> str | None:
+    if preferred and Path(preferred).exists():
+        return preferred
+    for candidate in candidates:
+        if Path(candidate).exists():
+            return candidate
+    return None
+
+
+def _load_font(path: str | None, size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    if path:
+        try:
+            return ImageFont.truetype(path, size)
+        except OSError:
+            pass
+    return ImageFont.load_default()

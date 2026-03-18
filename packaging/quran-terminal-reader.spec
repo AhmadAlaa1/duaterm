@@ -13,6 +13,8 @@ BuildRequires:  python3-devel
 BuildRequires:  pyproject-rpm-macros
 
 Requires:       kitty
+Requires:       google-noto-naskh-arabic-fonts
+Requires:       google-noto-sans-fonts
 
 %description
 Quran Terminal Reader is an offline terminal application for reading the Quran

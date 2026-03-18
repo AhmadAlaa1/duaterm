@@ -17,6 +17,8 @@ Package: quran-terminal-reader
 Architecture: all
 Depends:
  kitty,
+ fonts-noto-core,
+ fonts-dejavu-core,
  python3 (>= 3.11),
  python3-pil,
  ${misc:Depends},
