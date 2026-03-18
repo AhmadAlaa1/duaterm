@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from .azkar import Zikr
 from .model import SurahDetails
-from .rendering import normalize_ayah_separators
+from .rendering import normalize_azkar_text
 from .theme import get_render_theme
 
 ARABIC_FONT_CANDIDATES = [
@@ -589,7 +589,7 @@ class KittyAzkarRenderer:
             text_color = "#ffffff" if selected else self.theme.text
             wrapped = self._wrap_arabic_text(
                 draw,
-                normalize_ayah_separators(item.text),
+                normalize_azkar_text(item.text),
                 self.text_font,
                 available_width,
             )
