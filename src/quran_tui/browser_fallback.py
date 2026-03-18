@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .api import QuranAPI
 from .azkar import MORNING_AZKAR, NIGHT_AZKAR
+from .rendering import normalize_azkar_text
 
 HTML_VERSION = "2"
 
@@ -68,8 +69,8 @@ def build_browser_fallback(
         str(item["number"]): [ayah["text"] for ayah in item["ayahs"]]
         for item in quran_payload["data"]["surahs"]
     }
-    morning = [{"text": item.text, "repeat": item.repeat, "note": item.note} for item in MORNING_AZKAR]
-    night = [{"text": item.text, "repeat": item.repeat, "note": item.note} for item in NIGHT_AZKAR]
+    morning = [{"text": normalize_azkar_text(item.text), "repeat": item.repeat, "note": item.note} for item in MORNING_AZKAR]
+    night = [{"text": normalize_azkar_text(item.text), "repeat": item.repeat, "note": item.note} for item in NIGHT_AZKAR]
 
     output_dir = Path(tempfile.gettempdir()) / "quran-tui-browser"
     output_dir.mkdir(parents=True, exist_ok=True)

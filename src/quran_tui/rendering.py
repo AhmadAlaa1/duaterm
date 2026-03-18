@@ -36,6 +36,14 @@ def normalize_ayah_separators(text: str) -> str:
     return AYAH_SEPARATOR_RE.sub("  ۝  ", text).strip()
 
 
+def normalize_azkar_text(text: str) -> str:
+    if not text:
+        return text
+    # Some terminal/font stacks render ۝ badly and make it collide with Arabic text.
+    # Use a simpler separator for Azkar so the text remains readable everywhere.
+    return AYAH_SEPARATOR_RE.sub("  •  ", text).strip()
+
+
 def _transform_run(match: re.Match[str], mode: str) -> str:
     value = match.group(0)
     if not any(_is_arabic_char(char) for char in value):
