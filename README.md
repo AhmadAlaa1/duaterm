@@ -20,7 +20,7 @@ NoorTerm is a terminal product for reading the Quran and Azkar with a calm TUI, 
 - `kitty` image rendering for cleaner Arabic reading
 - Morning and Night Azkar views
 - Browser fallback mode from inside the app
-- Native packaging for Fedora/RPM, Debian/Ubuntu, and Arch
+- Native packaging for Fedora/RPM, Debian/Ubuntu, and Arch(Coming Soon!)
 
 ## The official Website
 
