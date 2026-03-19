@@ -29,7 +29,7 @@ UI_FONT_CANDIDATES = [
     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
     "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
 ]
-RENDER_VERSION = "31"
+RENDER_VERSION = "32"
 BASMALA_PREFIXES = (
     "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
     "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
@@ -662,7 +662,7 @@ class KittyAzkarRenderer:
                     direction="rtl",
                     language="ar",
                 )
-                x -= self._measure_plain_text(draw, value, self.text_font)
+                x -= _measure_rtl_text(draw, value, self.text_font)
             else:
                 label = f"({value})"
                 draw.text(
@@ -684,12 +684,12 @@ class KittyAzkarRenderer:
         last_end = 0
         for match in AZKAR_MARKER_RE.finditer(text):
             if match.start() > last_end:
-                width += self._measure_plain_text(draw, text[last_end:match.start()], font)
+                width += _measure_rtl_text(draw, text[last_end:match.start()], font)
             label = f"({match.group(1)})"
             width += draw.textlength(label, font=self.ui_font_small) + draw.textlength(" ", font=self.ui_font_small)
             last_end = match.end()
         if last_end < len(text):
-            width += self._measure_plain_text(draw, text[last_end:], font)
+            width += _measure_rtl_text(draw, text[last_end:], font)
         return width
 
     def _refresh_theme_if_needed(self) -> None:
