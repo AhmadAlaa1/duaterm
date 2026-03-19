@@ -1,19 +1,26 @@
-# Quran Terminal Reader
+# NoorTerm
 
-Read the Holy Quran in the terminal with a split-pane TUI built on Python `curses`.
+> Light in your Terminal
+
+NoorTerm is a terminal product for reading the Quran and Azkar with a calm TUI, offline bundled data, and a `kitty`-powered reading pane for reliable Arabic rendering.
+
+```text
+███╗   ██╗ ██████╗  ██████╗ ██████╗ ████████╗███████╗██████╗ ███╗   ███╗
+████╗  ██║██╔═══██╗██╔═══██╗██╔══██╗╚══██╔══╝██╔════╝██╔══██╗████╗ ████║
+██╔██╗ ██║██║   ██║██║   ██║██████╔╝   ██║   █████╗  ██████╔╝██╔████╔██║
+██║╚██╗██║██║   ██║██║   ██║██╔══██╗   ██║   ██╔══╝  ██╔══██╗██║╚██╔╝██║
+██║ ╚████║╚██████╔╝╚██████╔╝██║  ██║   ██║   ███████╗██║  ██║██║ ╚═╝ ██║
+╚═╝  ╚═══╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝
+```
 
 ## Features
 
-- Centered main menu with `Quran`, `Morning Azkar`, `Night Azkar`, and `Open Web UI`.
-- Browse all 114 surahs.
-- Load Quran text from bundled offline data in the `quran-uthmani` edition.
-- Scroll ayahs inside the terminal without external UI frameworks.
-- Run fully offline after installation because the Quran data ships with the project.
-
-## Requirements
-
-- Python 3.11 or newer.
-- A UTF-8 terminal with Arabic glyph support.
+- Centered main menu with `Quran`, `Morning Azkar`, `Night Azkar`, and `Open Web UI`
+- Offline Quran data bundled in the `quran-uthmani` edition
+- `kitty` image rendering for cleaner Arabic reading
+- Morning and Night Azkar views
+- Browser fallback mode from inside the app
+- Native packaging for Fedora/RPM, Debian/Ubuntu, and Arch
 
 ## Run
 
@@ -21,15 +28,9 @@ Read the Holy Quran in the terminal with a split-pane TUI built on Python `curse
 python3 main.py
 ```
 
-When started outside `kitty`, the app now auto-relaunches itself in `kitty` when `kitty` is installed. That avoids broken Arabic rendering in terminals such as the VS Code integrated terminal.
+If `kitty` is installed, NoorTerm relaunches itself there automatically for the best Arabic rendering.
 
-If you want to force raw in-terminal mode anyway:
-
-```bash
-QURAN_TUI_DISABLE_AUTO_KITTY=1 python3 main.py
-```
-
-If you are using the VS Code integrated terminal, use `kitty` instead:
+You can also run:
 
 ```bash
 ./run-in-kitty.sh
@@ -39,68 +40,47 @@ Or install it locally:
 
 ```bash
 python3 -m pip install -e .
-quran-tui
+noorterm
 ```
 
-## RPM Packaging
-
-Build a source tarball from the project root:
-
-```bash
-tar -czf quran-terminal-reader-0.1.0.tar.gz \
-  --exclude __pycache__ \
-  --exclude '*.pyc' \
-  --transform 's,^\.,quran-terminal-reader-0.1.0,' .
-```
-
-Then build the RPM:
-
-```bash
-rpmbuild -ta quran-terminal-reader-0.1.0.tar.gz
-```
-
-Or use the included spec directly:
-
-```bash
-rpmbuild -ba packaging/quran-terminal-reader.spec
-```
-
-Install with:
-
-```bash
-sudo dnf install ./noarch/quran-terminal-reader-0.1.0-1*.rpm
-```
-
-## Debian Packaging
-
-Build dependencies:
-
-```bash
-sudo apt install \
-  debhelper \
-  dh-python \
-  pybuild-plugin-pyproject \
-  python3-all \
-  python3-pil \
-  python3-setuptools
-```
-
-Build the package from the project root:
-
-```bash
-dpkg-buildpackage -us -uc
-```
-
-Install the resulting package:
-
-```bash
-sudo apt install ../quran-terminal-reader_0.1.0-1_all.deb
-```
-
-Then run:
+The legacy entrypoint still works too:
 
 ```bash
 quran-tui
+```
+
+## Packaging
+
+Build the native package for the current distro with one command:
+
+```bash
+./build-package.sh
+```
+
+Supported targets:
+
+- Fedora/RHEL: `.rpm`
+- Ubuntu/Debian: `.deb`
+- Arch: `.pkg.tar.zst`
+
+## Build Dependencies
+
+Fedora:
+
+```bash
+sudo dnf install rpm-build pyproject-rpm-macros python3-devel
+```
+
+Ubuntu/Debian:
+
+```bash
+sudo apt install debhelper dh-python pybuild-plugin-pyproject python3-all python3-pil python3-setuptools
+```
+
+Arch:
+
+```bash
+sudo pacman -S --needed base-devel python-build python-installer python-setuptools
 ```
 
 ## Controls
@@ -116,24 +96,12 @@ quran-tui
 - `Esc`: go back to the main menu
 - `q`: quit from the main menu
 
-## Arabic Rendering Modes
-
-- `bidi`: reverses Arabic run order without forcing presentation-form glyphs. This is the default and usually works best in terminals that already shape Arabic but get RTL order wrong.
-- `plain`: sends the original Quran text unchanged. Use this if your terminal already handles Arabic correctly.
-- `reshaped`: forces Arabic shaping plus bidi reordering. Use this only for terminals that show Arabic letters disconnected and reversed.
-
-You can set the startup mode with:
-
-```bash
-QURAN_TUI_ARABIC_MODE=bidi python3 main.py
-```
-
-The VS Code integrated terminal is not a reliable target for fully-correct Quranic Arabic rendering. For the most accurate result, run the app in `kitty`.
-
-The UI uses an Arabic-first layout to avoid mixing English and Arabic on the same line, which reduces bidi rendering problems in terminal emulators.
-When running inside `kitty`, the ayah pane is rendered as an image using `Noto Naskh Arabic`, which bypasses terminal bidi and shaping bugs.
-
 ## Notes
 
-- Quran text and surah metadata are bundled in [data/surahs.json](/home/user/GitHub/Ramadan_Project/data/surahs.json) and [data/quran-uthmani.json](/home/user/GitHub/Ramadan_Project/data/quran-uthmani.json).
-- The app no longer requires internet access at runtime.
+- The VS Code integrated terminal is not a reliable target for fully-correct Quranic Arabic rendering
+- The app auto-prefers `kitty` because the reading pane is rendered as an image there
+- Quran text and metadata are bundled locally, so runtime internet access is not required
+
+## Philosophy
+
+Technology should bring peace, not distraction.

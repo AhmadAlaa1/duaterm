@@ -1,5 +1,5 @@
-quran-terminal-reader (0.1.0-1) unstable; urgency=medium
+noorterm (0.1.0-1) unstable; urgency=medium
 
-  * Initial Debian package.
+  * Rebrand package as NoorTerm.
 
- -- Codex <codex@example.invalid>  Wed, 18 Mar 2026 12:30:00 +0200
+ -- NoorTerm Maintainers <maintainers@noorterm.invalid>  Wed, 18 Mar 2026 12:30:00 +0200

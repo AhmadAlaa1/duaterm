@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-export PYBUILD_NAME = quran-terminal-reader
+export PYBUILD_NAME = noorterm
 
 %:
 	dh $@ --buildsystem=pybuild

@@ -12,7 +12,7 @@ from .api import QuranAPI
 from .azkar import MORNING_AZKAR, NIGHT_AZKAR
 from .rendering import normalize_azkar_text
 
-HTML_VERSION = "2"
+HTML_VERSION = "3"
 
 
 def open_browser_fallback(api: QuranAPI, view: str = "quran", surah_number: int = 1, azkar_kind: str = "morning") -> Path:
@@ -81,7 +81,7 @@ def build_browser_fallback(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Quran Terminal Reader</title>
+  <title>NoorTerm</title>
   <style>
     :root {{
       --bg: #171916;
@@ -125,6 +125,12 @@ def build_browser_fallback(
     .brand {{
       font-size: 1.15rem;
       font-weight: 700;
+    }}
+    .brand-tagline {{
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-top: -8px;
+      margin-bottom: 4px;
     }}
     .tabs {{
       display: flex;
@@ -256,7 +262,8 @@ def build_browser_fallback(
 <body>
   <div class="app">
     <aside class="panel sidebar">
-      <div class="brand">Quran Terminal Reader</div>
+      <div class="brand">NoorTerm</div>
+      <div class="brand-tagline">Light in your Terminal</div>
       <div class="tabs">
         <button id="tab-quran">Quran</button>
         <button id="tab-morning">Morning Azkar</button>

@@ -19,6 +19,18 @@ from .rendering import (
 
 PANEL_GAP = 1
 MIN_SURAH_PANEL_WIDTH = 34
+FULL_LOGO = [
+    "███╗   ██╗ ██████╗  ██████╗ ██████╗ ████████╗███████╗██████╗ ███╗   ███╗",
+    "████╗  ██║██╔═══██╗██╔═══██╗██╔══██╗╚══██╔══╝██╔════╝██╔══██╗████╗ ████║",
+    "██╔██╗ ██║██║   ██║██║   ██║██████╔╝   ██║   █████╗  ██████╔╝██╔████╔██║",
+    "██║╚██╗██║██║   ██║██║   ██║██╔══██╗   ██║   ██╔══╝  ██╔══██╗██║╚██╔╝██║",
+    "██║ ╚████║╚██████╔╝╚██████╔╝██║  ██║   ██║   ███████╗██║  ██║██║ ╚═╝ ██║",
+    "╚═╝  ╚═══╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝",
+]
+MINI_LOGO = [
+    "[ NoorTerm ]",
+    "Light in your Terminal",
+]
 
 
 @dataclass
@@ -49,19 +61,15 @@ class QuranReaderApp:
         self.needs_redraw = True
         self.preview_due_at: float | None = None
         self.menu_items = ["Quran", "Morning Azkar", "Night Azkar", "Open Web UI"]
-        self.logo = [
-            "  ___                       _____ _____ _____ ",
-            " / _ \\ _   _ _ __ __ _ _ __|_   _|_   _|_   _|",
-            "| | | | | | | '__/ _` | '_ \\ | |   | |   | |  ",
-            "| |_| | |_| | | | (_| | | | || |   | |   | |  ",
-            " \\__\\_\\\\__,_|_|  \\__,_|_| |_|\\_|   \\_|   \\_|  ",
-        ]
+        self.logo = FULL_LOGO
+        self.small_logo = MINI_LOGO
 
     def run(self) -> None:
         curses.curs_set(0)
         self.stdscr.keypad(True)
         curses.use_default_colors()
         self._init_colors()
+        self._show_splash()
         self._bootstrap()
 
         while True:
@@ -88,9 +96,32 @@ class QuranReaderApp:
     def _init_colors(self) -> None:
         if not curses.has_colors():
             return
-        curses.init_pair(1, curses.COLOR_CYAN, -1)
+        orange = 208 if curses.COLORS >= 256 else curses.COLOR_YELLOW
+        curses.init_pair(1, orange, -1)
         curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_WHITE)
         curses.init_pair(3, curses.COLOR_YELLOW, -1)
+
+    def _show_splash(self) -> None:
+        height, width = self.stdscr.getmaxyx()
+        logo = self.logo if width >= max(len(line) for line in self.logo) + 4 else self.small_logo
+        top = max(1, height // 2 - len(logo) // 2 - 1)
+        center_x = width // 2
+        attr = curses.color_pair(1) if curses.has_colors() else curses.A_BOLD
+
+        for offset, _line in enumerate(logo):
+            self.stdscr.erase()
+            for inner_offset, inner_line in enumerate(logo[: offset + 1]):
+                x = max(0, center_x - len(inner_line) // 2)
+                self._safe_addnstr(top + inner_offset, x, inner_line, len(inner_line), attr)
+            self.stdscr.refresh()
+            time.sleep(0.04)
+
+        title = "Terminal Quran & Azkar"
+        subtitle = "Light in your Terminal"
+        self._safe_addnstr(top + len(logo) + 1, max(0, center_x - len(title) // 2), title, len(title), curses.A_BOLD)
+        self._safe_addnstr(top + len(logo) + 2, max(0, center_x - len(subtitle) // 2), subtitle, len(subtitle))
+        self.stdscr.refresh()
+        time.sleep(0.5)
 
     def _handle_key(self, key: int) -> bool:
         if key in (ord("q"), 27):
@@ -394,16 +425,19 @@ class QuranReaderApp:
 
     def _draw_menu(self, height: int, width: int) -> None:
         center_x = width // 2
-        top = max(2, height // 2 - 8)
-        for offset, line in enumerate(self.logo):
+        logo = self.logo if width >= max(len(line) for line in self.logo) + 4 else self.small_logo
+        top = max(2, height // 2 - (len(logo) + len(self.menu_items) * 2) // 2 - 2)
+        for offset, line in enumerate(logo):
             x = max(0, center_x - len(line) // 2)
             attr = curses.color_pair(1) if curses.has_colors() else curses.A_BOLD
             self._safe_addnstr(top + offset, x, line, len(line), attr)
 
         title = "Terminal Quran & Azkar"
-        self._safe_addnstr(top + len(self.logo) + 1, max(0, center_x - len(title) // 2), title, len(title), curses.A_BOLD)
+        subtitle = "Light in your Terminal"
+        self._safe_addnstr(top + len(logo) + 1, max(0, center_x - len(title) // 2), title, len(title), curses.A_BOLD)
+        self._safe_addnstr(top + len(logo) + 2, max(0, center_x - len(subtitle) // 2), subtitle, len(subtitle))
 
-        menu_top = top + len(self.logo) + 4
+        menu_top = top + len(logo) + 5
         for index, item in enumerate(self.menu_items):
             text = f"[ {item} ]"
             x = max(0, center_x - len(text) // 2)

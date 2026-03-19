@@ -1,11 +1,12 @@
 [project]
-name = "quran-terminal-reader"
+name = "noorterm"
 version = "0.1.0"
-description = "Read the Holy Quran in the terminal with a curses TUI."
+description = "Light in your terminal: Quran and Azkar with a calm TUI."
 readme = "README.md"
 requires-python = ">=3.11"
 
 [project.scripts]
+noorterm = "quran_tui.__main__:main"
 quran-tui = "quran_tui.__main__:main"
 
 [build-system]
