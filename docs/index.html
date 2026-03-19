@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DuaTerm</title>
+    <meta
+      name="description"
+      content="DuaTerm is a terminal-first Quran and Azkar app with offline data, native Linux packages, and a clean Quran reader experience."
+    >
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg: #120d0a;
+        --bg-2: #080605;
+        --panel: #221712;
+        --panel-2: #2d1f18;
+        --text: #f7efe9;
+        --muted: #efb693;
+        --brand: #ffb347;
+        --brand-shadow: #6e3710;
+        --accent: #ff8a3d;
+        --accent-2: #ffc06d;
+        --line: rgba(255, 192, 109, 0.15);
+        --shadow: rgba(0, 0, 0, 0.45);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "IBM Plex Mono", monospace;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 50% 100%, rgba(255, 138, 61, 0.14), transparent 30%),
+          radial-gradient(circle at 20% 15%, rgba(255, 192, 109, 0.12), transparent 18%),
+          linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .announcement {
+        padding: 10px 16px;
+        background: #ffb56a;
+        color: #27140a;
+        text-align: center;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .page {
+        width: min(1240px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 46px 0 70px;
+      }
+
+      .hero {
+        text-align: center;
+      }
+
+      .brand {
+        margin: 0 auto;
+        max-width: 980px;
+        padding: 20px 24px;
+        border-radius: 18px;
+        background: linear-gradient(180deg, rgba(255, 179, 71, 0.08), rgba(255, 138, 61, 0.02));
+        border: 1px solid var(--line);
+        color: var(--brand);
+        font-size: clamp(11px, 1.1vw, 18px);
+        line-height: 1.02;
+        text-shadow: 2px 2px 0 var(--brand-shadow);
+        overflow-x: auto;
+      }
+
+      .tagline {
+        margin: 18px auto 0;
+        color: var(--muted);
+        font-size: 28px;
+        max-width: 780px;
+      }
+
+      .tagline small {
+        font-size: 0.88em;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 14px;
+        margin: 28px auto 0;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 170px;
+        padding: 14px 18px;
+        border-radius: 10px;
+        background: linear-gradient(180deg, var(--accent-2), var(--accent));
+        color: #251208;
+        text-decoration: none;
+        font-weight: 800;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 8px 22px rgba(255, 138, 61, 0.22);
+      }
+
+      .button.secondary {
+        background: transparent;
+        color: var(--text);
+        box-shadow: none;
+      }
+
+      .preview {
+        margin-top: 42px;
+        padding: 18px;
+        border-radius: 18px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.02));
+        border: 1px solid var(--line);
+        box-shadow: 0 28px 60px var(--shadow);
+      }
+
+      .preview-shell {
+        border-radius: 14px;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.08);
+        background: #0f1018;
+      }
+
+      .preview-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 18px;
+        background: #11131d;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        color: #d8dff2;
+        font-size: 14px;
+      }
+
+      .preview-window {
+        position: relative;
+        min-height: 560px;
+        background:
+          radial-gradient(circle at 50% 68%, rgba(255, 192, 109, 0.52), transparent 12%),
+          radial-gradient(circle at 50% 72%, rgba(255, 138, 61, 0.18), transparent 26%),
+          linear-gradient(180deg, #4f1f18 0%, #8c3728 24%, #d15a3c 45%, #d87444 58%, #5e2419 78%, #120d0a 100%);
+      }
+
+      .preview-window::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(180deg, rgba(40, 11, 6, 0.24), transparent 30%),
+          radial-gradient(circle at 20% 22%, rgba(255,255,255,0.08), transparent 18%);
+      }
+
+      .preview-mountains,
+      .preview-mountains::before,
+      .preview-mountains::after {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        content: "";
+        pointer-events: none;
+      }
+
+      .preview-mountains {
+        height: 42%;
+        background: linear-gradient(180deg, rgba(36, 12, 7, 0.0), rgba(15, 8, 7, 0.92));
+        clip-path: polygon(0 100%, 0 54%, 7% 61%, 17% 42%, 26% 66%, 38% 39%, 50% 72%, 63% 48%, 73% 69%, 85% 41%, 100% 72%, 100% 100%);
+      }
+
+      .preview-mountains::before {
+        height: 34%;
+        background: #5f251b;
+        clip-path: polygon(0 100%, 0 60%, 10% 72%, 22% 47%, 34% 68%, 45% 42%, 58% 66%, 72% 35%, 85% 70%, 100% 51%, 100% 100%);
+        opacity: 0.85;
+      }
+
+      .preview-mountains::after {
+        height: 24%;
+        background: #2c120d;
+        clip-path: polygon(0 100%, 0 66%, 8% 80%, 17% 58%, 29% 81%, 40% 50%, 55% 84%, 68% 63%, 84% 82%, 100% 61%, 100% 100%);
+      }
+
+      .sun {
+        position: absolute;
+        left: 50%;
+        bottom: 25%;
+        width: 110px;
+        height: 110px;
+        margin-left: -55px;
+        border-radius: 50%;
+        background: radial-gradient(circle, #fff2d2 0%, #ffcb73 45%, rgba(255,203,115,0.08) 72%, transparent 73%);
+        box-shadow: 0 0 80px rgba(255, 184, 71, 0.55);
+      }
+
+      .preview-overlay {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+
+      .play {
+        width: 96px;
+        height: 96px;
+        border-radius: 24px;
+        background: rgba(255, 0, 64, 0.95);
+        display: grid;
+        place-items: center;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+      }
+
+      .play::before {
+        content: "";
+        display: block;
+        margin-left: 6px;
+        width: 0;
+        height: 0;
+        border-left: 28px solid white;
+        border-top: 18px solid transparent;
+        border-bottom: 18px solid transparent;
+      }
+
+      .preview-label,
+      .preview-card {
+        position: absolute;
+        color: #eef2ff;
+        border: 1px solid rgba(255, 192, 109, 0.4);
+        background: rgba(18, 22, 36, 0.52);
+        backdrop-filter: blur(6px);
+      }
+
+      .preview-label {
+        top: 18px;
+        left: 18px;
+        padding: 12px 14px;
+        border-radius: 999px;
+        font-size: 16px;
+      }
+
+      .preview-card {
+        right: 18px;
+        top: 18px;
+        width: 220px;
+        border-radius: 10px;
+        padding: 12px;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .preview-card strong {
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      .preview-bottom {
+        position: absolute;
+        left: 18px;
+        bottom: 18px;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        background: rgba(16, 16, 21, 0.78);
+        color: white;
+        font-weight: 700;
+      }
+
+      .preview-bottom span {
+        opacity: 0.88;
+      }
+
+      .section-grid {
+        margin-top: 30px;
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 18px;
+      }
+
+      .panel {
+        background: linear-gradient(180deg, rgba(38, 41, 58, 0.7), rgba(22, 24, 34, 0.7));
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 22px;
+      }
+
+      .panel h2 {
+        margin: 0 0 12px;
+        font-size: 20px;
+      }
+
+      .panel p,
+      .panel li {
+        color: #d0d7ea;
+        line-height: 1.75;
+      }
+
+      .panel ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .code {
+        margin-top: 14px;
+        padding: 16px;
+        border-radius: 14px;
+        background: rgba(12, 14, 22, 0.94);
+        border: 1px solid rgba(255,255,255,0.08);
+        color: #d7e0ff;
+        overflow-x: auto;
+      }
+
+      .repo {
+        color: #ffd891;
+      }
+
+      .brand-text {
+        display: block;
+        min-width: max-content;
+      }
+
+      .footer {
+        padding: 28px 0 10px;
+        text-align: center;
+        color: #aeb6cf;
+      }
+
+      @media (max-width: 920px) {
+        .section-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .preview-window {
+          min-height: 420px;
+        }
+
+        .preview-card {
+          width: 180px;
+          font-size: 11px;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .page {
+          width: min(100% - 20px, 1240px);
+          padding-top: 24px;
+        }
+
+        .tagline {
+          font-size: 20px;
+        }
+
+        .button {
+          width: 100%;
+        }
+
+        .preview-window {
+          min-height: 320px;
+        }
+
+        .preview-card,
+        .preview-bottom {
+          display: none;
+        }
+
+        .preview-label {
+          font-size: 13px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="announcement">DuaTerm is available for Debian, Fedora, and Arch.</div>
+
+    <main class="page">
+      <section class="hero">
+        <pre class="brand"><span class="brand-text">██████╗ ██╗   ██╗ █████╗ ████████╗███████╗██████╗ ███╗   ███╗
+██╔══██╗██║   ██║██╔══██╗╚══██╔══╝██╔════╝██╔══██╗████╗ ████║
+██║  ██║██║   ██║███████║   ██║   █████╗  ██████╔╝██╔████╔██║
+██║  ██║██║   ██║██╔══██║   ██║   ██╔══╝  ██╔══██╗██║╚██╔╝██║
+██████╔╝╚██████╔╝██║  ██║   ██║   ███████╗██║  ██║██║ ╚═╝ ██║
+╚═════╝  ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝</span></pre>
+        <p class="tagline">Prayer in your Terminal <small>for Quran, Azkar, and the 99 Names of Allah</small></p>
+
+        <div class="actions">
+          <a class="button" href="https://github.com/YOUR_GITHUB_USER/duaterm/releases/latest">Download</a>
+          <a class="button" href="https://github.com/YOUR_GITHUB_USER/duaterm">GitHub</a>
+          <a class="button secondary" href="#install">Install</a>
+          <a class="button secondary" href="#preview">Preview</a>
+        </div>
+      </section>
+
+      <section class="preview" id="preview">
+        <div class="preview-shell">
+          <div class="preview-topbar">
+            <span>DuaTerm preview</span>
+            <span>Video / screenshot section</span>
+          </div>
+          <div class="preview-window">
+            <div class="sun"></div>
+            <div class="preview-mountains"></div>
+            <div class="preview-overlay">
+              <div class="play" aria-hidden="true"></div>
+            </div>
+            <div class="preview-label">Add your demo video here later</div>
+            <div class="preview-card">
+              <strong>What to show in the video</strong>
+              Quran reading, Azkar navigation, 99 Names mode, package install, and the Web UI fallback.
+            </div>
+            <div class="preview-bottom">
+              <span>Watch the DuaTerm demo</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-grid">
+        <article class="panel" id="install">
+          <h2>Install with one command</h2>
+          <p>
+            Publish your `.deb` and `.rpm` assets in GitHub Releases, then replace
+            <span class="repo">YOUR_GITHUB_USER/duaterm</span> below with your real repository.
+          </p>
+          <div class="code"><code>curl -fsSL https://raw.githubusercontent.com/YOUR_GITHUB_USER/duaterm/main/install.sh | DUATERM_GITHUB_REPO=YOUR_GITHUB_USER/duaterm bash</code></div>
+          <p>
+            The installer detects Debian/Ubuntu or Fedora/RHEL automatically and installs the latest release package with the native package manager.
+          </p>
+        </article>
+
+        <article class="panel">
+          <h2>What the product includes</h2>
+          <ul>
+            <li>Offline Quran reader with bundled data</li>
+            <li>Morning Azkar and Night Azkar</li>
+            <li>99 Names of Allah in Arabic</li>
+            <li>`kitty` rendering path for cleaner Arabic display</li>
+            <li>Web UI fallback from the main menu</li>
+            <li>Native Linux packages for Debian, Fedora, and Arch</li>
+          </ul>
+          <div class="code"><code>duaterm</code></div>
+        </article>
+      </section>
+
+      <footer class="footer">
+        Built for a calm terminal workflow.
+      </footer>
+    </main>
+  </body>
+</html>

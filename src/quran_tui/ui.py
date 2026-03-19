@@ -6,7 +6,7 @@ import textwrap
 import time
 from dataclasses import dataclass
 
-from .azkar import MORNING_AZKAR, NIGHT_AZKAR, Zikr
+from .azkar import ALLAH_NAMES, MORNING_AZKAR, NIGHT_AZKAR, Zikr
 from .api import QuranAPI, QuranAPIError
 from .browser_fallback import open_browser_fallback
 from .image_render import KittyAyahRenderer, KittyAzkarRenderer
@@ -62,7 +62,7 @@ class QuranReaderApp:
         self.kitty_azkar_renderer = KittyAzkarRenderer()
         self.needs_redraw = True
         self.preview_due_at: float | None = None
-        self.menu_items = ["Quran", "Morning Azkar", "Night Azkar", "Open Web UI"]
+        self.menu_items = ["Quran", "Morning Azkar", "Night Azkar", "99 Names of Allah", "Open Web UI"]
         self.logo = FULL_LOGO
         self.small_logo = MINI_LOGO
         self.accent_attr = curses.A_BOLD
@@ -210,12 +210,17 @@ class QuranReaderApp:
                 self.state.followup_redraw_due_at = time.monotonic() + 0.05
             elif selected == "Open Web UI":
                 self._open_browser_current_view()
-            else:
+            elif selected in {"Morning Azkar", "Night Azkar", "99 Names of Allah"}:
                 self.kitty_renderer.clear()
                 self.kitty_azkar_renderer.last_image = None
                 self.kitty_azkar_renderer.last_place = None
                 self.state.screen = "azkar"
-                self.state.azkar_kind = "morning" if selected == "Morning Azkar" else "night"
+                if selected == "Morning Azkar":
+                    self.state.azkar_kind = "morning"
+                elif selected == "Night Azkar":
+                    self.state.azkar_kind = "night"
+                else:
+                    self.state.azkar_kind = "names"
                 self.state.azkar_index = 0
                 self.state.azkar_top_line = 0
                 self.state.focus = "ayahs"
@@ -464,7 +469,7 @@ class QuranReaderApp:
                 self._draw_azkar_frame(height, width)
                 self.stdscr.refresh()
                 self.kitty_azkar_renderer.draw(
-                    "Morning Azkar" if self.state.azkar_kind == "morning" else "Night Azkar",
+                    self._azkar_title(),
                     self._current_azkar(),
                     self.state.azkar_top_line,
                     self.state.azkar_index,
@@ -532,7 +537,7 @@ class QuranReaderApp:
         self._safe_addnstr(height - 2, max(0, center_x - len(help_text) // 2), help_text, len(help_text))
 
     def _draw_azkar_screen(self, height: int, width: int) -> None:
-        title = "Morning Azkar" if self.state.azkar_kind == "morning" else "Night Azkar"
+        title = self._azkar_title()
         self._draw_azkar_frame(height, width)
         if self.kitty_azkar_renderer.is_supported():
             return
@@ -544,9 +549,10 @@ class QuranReaderApp:
         for index in range(top, bottom):
             zikr = items[index]
             attr = self.selected_attr if index == self.state.azkar_index else 0
-            header = f"{index + 1}. {zikr.repeat}"
-            self._safe_addnstr(row, 2, header, width - 4, attr | curses.A_BOLD)
-            row += 1
+            if zikr.repeat:
+                header = f"{index + 1}. {zikr.repeat}"
+                self._safe_addnstr(row, 2, header, width - 4, attr | curses.A_BOLD)
+                row += 1
             wrapped = textwrap.wrap(
                 self._render_arabic(normalize_azkar_text(zikr.text)),
                 max(20, width - 6),
@@ -554,7 +560,11 @@ class QuranReaderApp:
             for line in wrapped:
                 if row >= height - 2:
                     break
-                self._safe_addnstr(row, 4, line, width - 6, attr)
+                if self.state.azkar_kind == "names":
+                    x = max(0, (width - len(line)) // 2)
+                    self._safe_addnstr(row, x, line, width - 2, attr | curses.A_BOLD)
+                else:
+                    self._safe_addnstr(row, 4, line, width - 6, attr)
                 row += 1
             if zikr.note and row < height - 2:
                 self._safe_addnstr(row, 4, zikr.note, width - 6, attr)
@@ -567,7 +577,7 @@ class QuranReaderApp:
         self._draw_status_bar(height - 1, width, override=f"{title}  {status}")
 
     def _draw_azkar_frame(self, height: int, width: int) -> None:
-        title = "Morning Azkar" if self.state.azkar_kind == "morning" else "Night Azkar"
+        title = self._azkar_title()
         self._draw_box(0, 0, height - 1, width, title)
         status = "Esc back | Up/Down move"
         self._draw_status_bar(height - 1, width, override=f"{title}  {status}")
@@ -708,7 +718,18 @@ class QuranReaderApp:
         self.needs_redraw = True
 
     def _current_azkar(self) -> list[Zikr]:
-        return MORNING_AZKAR if self.state.azkar_kind == "morning" else NIGHT_AZKAR
+        if self.state.azkar_kind == "morning":
+            return MORNING_AZKAR
+        if self.state.azkar_kind == "night":
+            return NIGHT_AZKAR
+        return ALLAH_NAMES
+
+    def _azkar_title(self) -> str:
+        if self.state.azkar_kind == "morning":
+            return "Morning Azkar"
+        if self.state.azkar_kind == "night":
+            return "Night Azkar"
+        return "99 Names of Allah"
 
     def _ensure_zikr_visible(self) -> None:
         visible = self._azkar_visible_items()

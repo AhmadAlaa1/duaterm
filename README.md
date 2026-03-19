@@ -51,6 +51,24 @@ quran-tui
 
 The previous `noorterm` entrypoint still works too.
 
+## GitHub Landing Page
+
+This repo includes a GitHub Pages-ready landing page at [docs/index.html](/home/user/GitHub/Ramadan_Project/docs/index.html) and a one-command installer at [install.sh](/home/user/GitHub/Ramadan_Project/install.sh).
+
+Before publishing:
+
+- replace `YOUR_GITHUB_USER/duaterm` in [docs/index.html](/home/user/GitHub/Ramadan_Project/docs/index.html)
+- set the real repo in your install command, for example:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/YOUR_GITHUB_USER/duaterm/main/install.sh | DUATERM_GITHUB_REPO=YOUR_GITHUB_USER/duaterm bash
+```
+
+The installer auto-detects:
+
+- Debian/Ubuntu: installs the latest `.deb`
+- Fedora/RHEL: installs the latest `.rpm`
+
 ## Packaging
 
 Build the native package for the current distro with one command:
