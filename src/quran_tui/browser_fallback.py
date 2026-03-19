@@ -9,7 +9,7 @@ import webbrowser
 from pathlib import Path
 
 from .api import QuranAPI
-from .azkar import MORNING_AZKAR, NIGHT_AZKAR
+from .azkar import ALLAH_NAMES, MORNING_AZKAR, NIGHT_AZKAR
 from .rendering import normalize_azkar_text
 
 HTML_VERSION = "3"
@@ -71,6 +71,7 @@ def build_browser_fallback(
     }
     morning = [{"text": normalize_azkar_text(item.text), "repeat": item.repeat, "note": item.note} for item in MORNING_AZKAR]
     night = [{"text": normalize_azkar_text(item.text), "repeat": item.repeat, "note": item.note} for item in NIGHT_AZKAR]
+    names = [{"text": item.text, "repeat": item.repeat, "note": item.note} for item in ALLAH_NAMES]
 
     output_dir = Path(tempfile.gettempdir()) / "quran-tui-browser"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -268,6 +269,7 @@ def build_browser_fallback(
         <button id="tab-quran">Quran</button>
         <button id="tab-morning">Morning Azkar</button>
         <button id="tab-night">Night Azkar</button>
+        <button id="tab-names">99 Names of Allah</button>
       </div>
       <div id="surah-list" class="surah-list"></div>
     </aside>
@@ -283,6 +285,7 @@ def build_browser_fallback(
     const quran = {json.dumps(quran_surahs, ensure_ascii=False)};
     const morning = {json.dumps(morning, ensure_ascii=False)};
     const night = {json.dumps(night, ensure_ascii=False)};
+    const names = {json.dumps(names, ensure_ascii=False)};
 
     let currentView = initialView;
     let currentSurah = initialSurah;
@@ -292,6 +295,7 @@ def build_browser_fallback(
     const quranTab = document.getElementById("tab-quran");
     const morningTab = document.getElementById("tab-morning");
     const nightTab = document.getElementById("tab-night");
+    const namesTab = document.getElementById("tab-names");
 
     function ayahLabel(n) {{
       return `<span class="ayah-marker">(${{n}})</span>`;
@@ -309,6 +313,7 @@ def build_browser_fallback(
       quranTab.classList.toggle("active", currentView === "quran");
       morningTab.classList.toggle("active", currentView === "morning");
       nightTab.classList.toggle("active", currentView === "night");
+      namesTab.classList.toggle("active", currentView === "names");
     }}
 
     function renderSidebar() {{
@@ -367,13 +372,13 @@ def build_browser_fallback(
     }}
 
     function renderAzkar(kind) {{
-      const items = kind === "morning" ? morning : night;
-      const title = kind === "morning" ? "Morning Azkar" : "Night Azkar";
+      const items = kind === "morning" ? morning : kind === "night" ? night : names;
+      const title = kind === "morning" ? "Morning Azkar" : kind === "night" ? "Night Azkar" : "99 Names of Allah";
       page.innerHTML = `
         <div class="azkar-title">${{title}}</div>
         ${{items.map((item, index) => `
           <section class="zikr">
-            <div class="zikr-head">${{index + 1}}. ${{item.repeat}}</div>
+            <div class="zikr-head">${{item.repeat ? `${{index + 1}}. ${{item.repeat}}` : ""}}</div>
             <div class="zikr-text">${{formatArabicText(item.text)}}</div>
             ${{item.note ? `<div class="zikr-note">${{escapeHtml(item.note)}}</div>` : ""}}
           </section>
@@ -388,6 +393,8 @@ def build_browser_fallback(
         renderQuran();
       }} else if (currentView === "morning") {{
         renderAzkar("morning");
+      }} else if (currentView === "names") {{
+        renderAzkar("names");
       }} else {{
         renderAzkar("night");
       }}
@@ -396,9 +403,11 @@ def build_browser_fallback(
     quranTab.onclick = () => {{ currentView = "quran"; render(); }};
     morningTab.onclick = () => {{ currentView = "morning"; render(); }};
     nightTab.onclick = () => {{ currentView = "night"; render(); }};
+    namesTab.onclick = () => {{ currentView = "names"; render(); }};
 
     if (initialView === "morning") currentView = "morning";
     if (initialView === "night") currentView = "night";
+    if (initialView === "names") currentView = "names";
     render();
   </script>
 </body>

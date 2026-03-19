@@ -603,6 +603,11 @@ class KittyAzkarRenderer:
             width=2,
         )
 
+        if self._is_names_mode(title, items):
+            self._render_names_layout(draw, title, items, inner_left, inner_top, inner_right, inner_bottom, width_px, height_px, top_index, selected_index)
+            image.save(image_path)
+            return image_path
+
         draw.text((width_px // 2, outer_margin_y + 24), title, font=self.title_font, fill=self.theme.header, anchor="ma")
         y = outer_margin_y + 70
         right_x = inner_right - 36
@@ -637,6 +642,47 @@ class KittyAzkarRenderer:
 
         image.save(image_path)
         return image_path
+
+    def _is_names_mode(self, title: str, items: list[Zikr]) -> bool:
+        return title == "99 Names of Allah" and all(not item.repeat and not item.note for item in items)
+
+    def _render_names_layout(
+        self,
+        draw: ImageDraw.ImageDraw,
+        title: str,
+        items: list[Zikr],
+        inner_left: int,
+        inner_top: int,
+        inner_right: int,
+        inner_bottom: int,
+        width_px: int,
+        height_px: int,
+        top_index: int,
+        selected_index: int,
+    ) -> None:
+        draw.text((width_px // 2, inner_top + 24), title, font=self.title_font, fill=self.theme.header, anchor="ma")
+        draw.text((width_px // 2, inner_top + 64), "أَسْمَاءُ اللَّهِ الْحُسْنَى", font=self.text_font, fill=self.theme.header, anchor="ma", direction="rtl", language="ar")
+
+        y = inner_top + 112
+        row_height = 48
+        max_rows = max(1, (inner_bottom - y - 18) // row_height)
+        visible_items = items[top_index : top_index + max_rows]
+
+        for offset, item in enumerate(visible_items):
+            name = item.text.strip()
+            if not name:
+                continue
+            row_y = y + offset * row_height
+            color = "#ffffff" if (top_index + offset) == selected_index else self.theme.text
+            draw.text(
+                (width_px // 2, row_y),
+                name,
+                font=self.text_font,
+                fill=color,
+                anchor="ma",
+                direction="rtl",
+                language="ar",
+            )
 
     def _wrap_arabic_text(
         self,
