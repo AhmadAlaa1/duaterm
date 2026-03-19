@@ -63,6 +63,10 @@ class QuranReaderApp:
         self.menu_items = ["Quran", "Morning Azkar", "Night Azkar", "Open Web UI"]
         self.logo = FULL_LOGO
         self.small_logo = MINI_LOGO
+        self.accent_attr = curses.A_BOLD
+        self.selected_attr = curses.A_REVERSE | curses.A_BOLD
+        self.gutter_attr = curses.A_BOLD
+        self.secondary_attr = curses.A_DIM
 
     def run(self) -> None:
         curses.curs_set(0)
@@ -94,19 +98,24 @@ class QuranReaderApp:
             self.state.status = f"Load failed: {exc}"
 
     def _init_colors(self) -> None:
+        self.accent_attr = curses.A_BOLD
+        self.selected_attr = curses.A_REVERSE | curses.A_BOLD
+        self.gutter_attr = curses.A_BOLD
+        self.secondary_attr = curses.A_DIM
+
         if not curses.has_colors():
             return
-        orange = 208 if curses.COLORS >= 256 else curses.COLOR_YELLOW
-        curses.init_pair(1, orange, -1)
-        curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_WHITE)
-        curses.init_pair(3, curses.COLOR_YELLOW, -1)
+        try:
+            curses.use_default_colors()
+        except curses.error:
+            pass
 
     def _show_splash(self) -> None:
         height, width = self.stdscr.getmaxyx()
         logo = self.logo if width >= max(len(line) for line in self.logo) + 4 else self.small_logo
         top = max(1, height // 2 - len(logo) // 2 - 1)
         center_x = width // 2
-        attr = curses.color_pair(1) if curses.has_colors() else curses.A_BOLD
+        attr = self.accent_attr
 
         for offset, _line in enumerate(logo):
             self.stdscr.erase()
@@ -119,7 +128,13 @@ class QuranReaderApp:
         title = "Terminal Quran & Azkar"
         subtitle = "Light in your Terminal"
         self._safe_addnstr(top + len(logo) + 1, max(0, center_x - len(title) // 2), title, len(title), curses.A_BOLD)
-        self._safe_addnstr(top + len(logo) + 2, max(0, center_x - len(subtitle) // 2), subtitle, len(subtitle))
+        self._safe_addnstr(
+            top + len(logo) + 2,
+            max(0, center_x - len(subtitle) // 2),
+            subtitle,
+            len(subtitle),
+            self.secondary_attr,
+        )
         self.stdscr.refresh()
         time.sleep(0.5)
 
@@ -429,21 +444,25 @@ class QuranReaderApp:
         top = max(2, height // 2 - (len(logo) + len(self.menu_items) * 2) // 2 - 2)
         for offset, line in enumerate(logo):
             x = max(0, center_x - len(line) // 2)
-            attr = curses.color_pair(1) if curses.has_colors() else curses.A_BOLD
+            attr = self.accent_attr
             self._safe_addnstr(top + offset, x, line, len(line), attr)
 
         title = "Terminal Quran & Azkar"
         subtitle = "Light in your Terminal"
         self._safe_addnstr(top + len(logo) + 1, max(0, center_x - len(title) // 2), title, len(title), curses.A_BOLD)
-        self._safe_addnstr(top + len(logo) + 2, max(0, center_x - len(subtitle) // 2), subtitle, len(subtitle))
+        self._safe_addnstr(
+            top + len(logo) + 2,
+            max(0, center_x - len(subtitle) // 2),
+            subtitle,
+            len(subtitle),
+            self.secondary_attr,
+        )
 
         menu_top = top + len(logo) + 5
         for index, item in enumerate(self.menu_items):
             text = f"[ {item} ]"
             x = max(0, center_x - len(text) // 2)
-            attr = curses.color_pair(2) if index == self.state.menu_index and curses.has_colors() else 0
-            if index == self.state.menu_index and not curses.has_colors():
-                attr = curses.A_REVERSE
+            attr = self.selected_attr if index == self.state.menu_index else 0
             self._safe_addnstr(menu_top + index * 2, x, text, len(text), attr)
 
         help_text = "Enter select | q quit"
@@ -473,9 +492,7 @@ class QuranReaderApp:
         row = 1
         for index in range(top, bottom):
             zikr = items[index]
-            attr = curses.color_pair(2) if index == self.state.azkar_index and curses.has_colors() else 0
-            if index == self.state.azkar_index and not curses.has_colors():
-                attr = curses.A_REVERSE
+            attr = self.selected_attr if index == self.state.azkar_index else 0
             header = f"{index + 1}. {zikr.repeat}"
             self._safe_addnstr(row, 2, header, width - 4, attr | curses.A_BOLD)
             row += 1
@@ -508,9 +525,9 @@ class QuranReaderApp:
             surah = self.state.surahs[index]
             attr = curses.A_NORMAL
             if index == self.state.selected_surah_index:
-                attr = curses.color_pair(2) if curses.has_colors() else curses.A_REVERSE
+                attr = self.selected_attr
             elif surah.revelation_type.lower() == "meccan":
-                attr = curses.color_pair(1) if curses.has_colors() else curses.A_NORMAL
+                attr = self.secondary_attr
 
             number_label = f"{surah.number:>3}."
             english_label = surah.english_name
@@ -544,8 +561,7 @@ class QuranReaderApp:
         visible = lines[self.state.ayah_top_line : self.state.ayah_top_line + height - 2]
         for row, (gutter, text) in enumerate(visible, start=1):
             if gutter:
-                gutter_attr = curses.color_pair(3) if curses.has_colors() else curses.A_BOLD
-                self._safe_addnstr(y + row, x + 1, gutter, 6, gutter_attr)
+                self._safe_addnstr(y + row, x + 1, gutter, 6, self.gutter_attr)
             rendered_text = self._render_arabic(text)
             available_width = max(1, width - 8)
             text_width = min(len(rendered_text), available_width)
