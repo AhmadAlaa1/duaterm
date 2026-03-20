@@ -13,6 +13,8 @@ NoorTerm is a terminal product for reading the Quran and Azkar with a calm TUI, 
 ╚═╝  ╚═══╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝
 ```
 
+<video src="./2026-03-20 01-50-38.mp4" controls width="600"></video>
+
 ## Features
 
 - Centered main menu with `Quran`, `Morning Azkar`, `Night Azkar`, and `Open Web UI`
