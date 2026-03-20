@@ -135,17 +135,6 @@
         background: #0f1018;
       }
 
-      .preview-topbar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 14px 18px;
-        background: #11131d;
-        border-bottom: 1px solid rgba(255,255,255,0.06);
-        color: #d8dff2;
-        font-size: 14px;
-      }
-
       .preview-window {
         position: relative;
         min-height: 560px;
@@ -170,58 +159,6 @@
         height: 100%;
         object-fit: cover;
         z-index: 0;
-      }
-
-      .preview-label,
-      .preview-card {
-        position: absolute;
-        color: #eef2ff;
-        border: 1px solid rgba(255, 192, 109, 0.4);
-        background: rgba(18, 22, 36, 0.52);
-        backdrop-filter: blur(6px);
-        z-index: 2;
-      }
-
-      .preview-label {
-        top: 18px;
-        left: 18px;
-        padding: 12px 14px;
-        border-radius: 999px;
-        font-size: 16px;
-      }
-
-      .preview-card {
-        right: 18px;
-        top: 18px;
-        width: 220px;
-        border-radius: 10px;
-        padding: 12px;
-        font-size: 12px;
-        line-height: 1.45;
-      }
-
-      .preview-card strong {
-        display: block;
-        margin-bottom: 6px;
-      }
-
-      .preview-bottom {
-        position: absolute;
-        left: 18px;
-        bottom: 18px;
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 16px;
-        border-radius: 12px;
-        background: rgba(16, 16, 21, 0.78);
-        color: white;
-        font-weight: 700;
-        z-index: 2;
-      }
-
-      .preview-bottom span {
-        opacity: 0.88;
       }
 
       .section-grid {
@@ -287,11 +224,6 @@
         .preview-window {
           min-height: 420px;
         }
-
-        .preview-card {
-          width: 180px;
-          font-size: 11px;
-        }
       }
 
       @media (max-width: 640px) {
@@ -312,14 +244,6 @@
           min-height: 320px;
         }
 
-        .preview-card,
-        .preview-bottom {
-          display: none;
-        }
-
-        .preview-label {
-          font-size: 13px;
-        }
       }
     </style>
   </head>
@@ -346,23 +270,11 @@
 
       <section class="preview" id="preview">
         <div class="preview-shell">
-          <div class="preview-topbar">
-            <span>NoorTerm preview</span>
-            <span>Demo video</span>
-          </div>
           <div class="preview-window">
-            <video class="preview-media" controls playsinline preload="metadata">
+            <video class="preview-media" autoplay loop muted playsinline preload="auto">
               <source src="2026-03-20%2001-50-38.mp4" type="video/mp4">
               Your browser does not support the video tag.
             </video>
-            <div class="preview-label">NoorTerm demo</div>
-            <div class="preview-card">
-              <strong>In this video</strong>
-              Quran reading, Azkar navigation, and the NoorTerm terminal interface in action.
-            </div>
-            <div class="preview-bottom">
-              <span>Watch the NoorTerm demo</span>
-            </div>
           </div>
         </div>
       </section>
