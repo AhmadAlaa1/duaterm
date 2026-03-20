@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+
+.pytest_cache/
+.mypy_cache/
+
+build/
+dist/
+*.egg-info/
+
+/noorterm-*.tar.gz
+/quran-terminal-reader-*.tar.gz
+/*.deb
+/*.rpm
+/*.pkg.tar.*

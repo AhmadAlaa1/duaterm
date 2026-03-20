@@ -1,7 +1,7 @@
 Name:           noorterm
 Version:        0.1.0
 Release:        1%{?dist}
-Summary:        Terminal TUI for reading the Quran and Azkar
+Summary:        Offline Quran reading and Azkar with bundled data
 
 License:        MIT
 URL:            https://example.invalid/noorterm
@@ -17,9 +17,10 @@ Requires:       google-noto-naskh-arabic-fonts
 Requires:       google-noto-sans-fonts
 
 %description
-NoorTerm is an offline terminal application for reading the Quran
-and Azkar with a curses interface and kitty image rendering for high-quality
-Arabic text display.
+NoorTerm provides offline Quran reading and Azkar with bundled
+data, keyboard navigation, and kitty-powered Arabic rendering.
+It includes morning and night Azkar, the 99 Names of Allah, and a
+web UI fallback.
 
 %prep
 %autosetup -n %{name}-%{version}
