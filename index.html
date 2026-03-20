@@ -137,7 +137,6 @@
 
       .preview-window {
         position: relative;
-        min-height: 560px;
         background: #050608;
       }
 
@@ -153,12 +152,9 @@
       }
 
       .preview-media {
-        position: absolute;
-        inset: 0;
+        display: block;
         width: 100%;
-        height: 100%;
-        object-fit: contain;
-        object-position: center;
+        height: auto;
         z-index: 0;
       }
 
@@ -231,7 +227,7 @@
         }
 
         .preview-window {
-          min-height: 420px;
+          min-height: 0;
         }
       }
 
@@ -281,7 +277,7 @@
         }
 
         .preview-window {
-          min-height: 240px;
+          min-height: 0;
         }
 
         .panel {
